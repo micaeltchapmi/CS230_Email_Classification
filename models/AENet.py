@@ -30,12 +30,9 @@ def AENet_create_model(args):
     criterion_rec = nn.MSELoss()
     criterion_class = nn.CrossEntropyLoss()
     model = FullModel(args, model, criterion_rec, criterion_class)
-    """
+    
     if len(args.gpus) > 0:
         model = nn.DataParallel(model, device_ids=args.gpus).cuda()
-    else:
-        model = nn.DataParallel(model, device_ids=args.gpus)
-     """
     
     model.apply(weights_init)
     return model
