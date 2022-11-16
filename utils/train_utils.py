@@ -21,7 +21,6 @@ from shared.dataprocess import kill_data_processes
 from shared.datasets.cifar10 import CIFAR10DataProcess
 from data_utils import save_prediction
 from loss_utils import getLabelCount, getmeaniou, getconfmatrix
-from data_process import show_image
 import json
 from AENet import *
 
