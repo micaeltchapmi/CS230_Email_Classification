@@ -128,6 +128,13 @@ def save_prediction(args, image, rec, imgname, bid, img_id, epoch):
         os.makedirs(plot_path)
     fig.savefig(os.path.join(plot_path, imgname + str(img_id) + '.png'), facecolor=fig.get_facecolor())
     plt.close()
+
+def show_image(image, label=None, title=None):
+    fig = plt.figure(figsize=(5, 5))
+    ax = fig.add_subplot(111)
+    plt.imshow(image)
+    plt.title(title + "_ID: " + str(label))
+    plt.show()
     
 
 if __name__ == "__main__":

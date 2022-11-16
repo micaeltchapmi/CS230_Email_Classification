@@ -12,9 +12,8 @@ import json
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from dataprocess import DataProcess, get_while_running, kill_data_processes
-from data_utils import load_img, get_CIFAR10_data, preprocessing_CIFAR10_data, load_CIFAR10, visualize_sample
+from data_utils import show_image, get_CIFAR10_data, preprocessing_CIFAR10_data, load_CIFAR10, visualize_sample
 sys.path.insert(0, './')
-from data_process import show_image
 
 
 class CIFAR10DataProcess(DataProcess):
