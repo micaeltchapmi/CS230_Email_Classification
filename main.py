@@ -5,13 +5,12 @@ import math
 import torch
 import _init_paths
 from parse_args import parse_args
-from CDINet import *
-from AlexNet import *
-from UNet import *
+from AENet import *
 from VGGNet import *
-from shared.dataprocess import kill_data_processes
 from train_utils import model_at, parse_experiment, metrics, train, test, \
    data_setup, set_seed, create_optimizer, check_overwrite, resume
+from shared.dataprocess import kill_data_processes
+
 
 def save_model(args, epoch):
     model_bk = args.model
@@ -25,12 +24,13 @@ def save_model(args, epoch):
 def main():
     args = parse_args()
     set_seed(args.seed)
-    
+
     #set up train dataloader
     train_data_queue, train_data_processes = data_setup(args, 'train', args.nworkers,
                                                         repeat=True)
+    
+    #set up network
     eval(args.net + '_setup')(args)
-
     
     # Create model and optimizer
     if args.resume or args.eval:

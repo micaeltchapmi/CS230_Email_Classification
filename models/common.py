@@ -1,3 +1,4 @@
+from cProfile import label
 import torch.nn as nn
 import torch
 
@@ -18,12 +19,18 @@ class FullModel(nn.Module):
     You can check the following discussion.
     https://discuss.pytorch.org/t/dataparallel-imbalanced-memory-usage/22551/21
     """
-    def __init__(self, model, loss):
+    def __init__(self, args, model, loss_rec, loss_class):
         super(FullModel, self).__init__()
         self.model = model
-        self.loss = loss
+        self.loss_rec = loss_rec
+        self.loss_class = loss_class
+        self.args = args
 
     def forward(self, inputs, labels):
         outputs = self.model(inputs)
-        loss = self.loss(outputs, labels)
-        return torch.unsqueeze(loss,0), outputs
+        pred, decoded = outputs
+
+        rec_loss = self.loss_rec(decoded, inputs)
+        classification_loss = self.loss_class(pred, labels)
+        loss = rec_loss + classification_loss
+        return torch.unsqueeze(loss,0), rec_loss, outputs

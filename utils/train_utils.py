@@ -18,14 +18,12 @@ import torch.optim as optim
 from multiprocessing import Queue
 from tqdm import tqdm
 from shared.dataprocess import kill_data_processes
-from shared.datasets.cdi import CDIDataProcess
+from shared.datasets.cifar10 import CIFAR10DataProcess
 from data_utils import save_prediction
 from loss_utils import getLabelCount, getmeaniou, getconfmatrix
 from data_process import show_image
-from CDINet import *
-from AlexNet import *
-from VGGNet import *
 import json
+from AENet import *
 
 
 def check_overwrite(fname):
@@ -41,7 +39,7 @@ def check_overwrite(fname):
 
 
 def data_setup(args, phase, num_workers, repeat):
-    DataProcessClass = CDIDataProcess
+    DataProcessClass = CIFAR10DataProcess
     # Initialize data processes
     data_queue = Queue(4 * num_workers)
     data_processes = []
@@ -102,6 +100,9 @@ def resume(args, i):
 
 
 def create_optimizer(args, model):
+    if args.net == "SVM":
+        return None
+
     params = filter(lambda p: p.requires_grad, model.parameters())
     print(args.optim)
     if args.optim == 'sgd':
@@ -161,7 +162,7 @@ def train_or_test(args, data_queue, data_processes, training):
     for bidx in tqdm(range(Nb)):
         item = data_queue.get()
         imgs, gts, meta = item
-        N, W, H = imgs.shape
+        N, W, H, C = imgs.shape
 
         t_loader = 1000*(time.time()-t0)
         t0 = time.time()
@@ -240,11 +241,10 @@ def metrics(split, args, epoch=0):
         N = len(data_processes[0].data_paths)
         batch_size = data_processes[0].batch_size
         Nb = int(N/batch_size)
-        overall_avg_abs_cdi_dist = []
-        overall_avg_icc = []
-        overall_avg_keypt_dist = []
+        overall_class_acc = []
         preds = []
         truths = []
+        recs = []
         if Nb*batch_size < N:
             Nb += 1
         # iterate over dataset in batches
@@ -253,62 +253,50 @@ def metrics(split, args, epoch=0):
         for bidx in tqdm(range(Nb)):
             item = data_queue.get()
             imgs, gts, meta = item
-            N, W, H = imgs.shape
+            N, W, H, C = imgs.shape
             lnm, losses, outputs = args.step(args, item)
-            overall_avg_keypt_dist.append(losses[1])
-            overall_avg_icc.append(losses[2])
-            overall_avg_abs_cdi_dist.append(losses[3])
-            pred = outputs[0].cpu().numpy()
-            preds.extend(pred)
+
+            overall_class_acc.append(losses[1])
+            pred_i = outputs[0].cpu().numpy()
+            rec_i = outputs[1].cpu().numpy()
+
+            preds.extend(pred_i)
             truths.extend(gts)
+            recs.extend(rec_i)
             
             #save one image from each batch, and at most 5 images for viewing sample predictions
             if count < 5:
-                view_predictions(args, imgs, gts, pred, meta, bidx, epoch)
+                view_predictions(args, imgs, gts, pred_i, rec_i, meta, bidx, epoch)
                 count+=1
 
         preds = np.asarray(preds)
         truths = np.asarray(truths)
-        o_avg_kpt_dist = np.mean(overall_avg_keypt_dist)
-        o_avg_icc = np.mean(overall_avg_icc)
-        o_avg_cdi = np.mean(overall_avg_abs_cdi_dist)
+        
+        overall_class_acc = np.mean(overall_class_acc)
 
-        odir = args.odir + '/average_keypoint_dist'
+        odir = args.odir + '/acc'
         os.makedirs(odir, exist_ok=True)
         outfile = odir + '/results_%s_%d.txt' % (split, epoch + 1)
         
         #save average keypoint distance
         print("Saving results to %s ..." % (outfile))
         with open(outfile, 'w') as f:
-            f.write('average_keypoint_dist: %.5f\n' % (o_avg_kpt_dist))
-        
-        #save icc
-        odir = args.odir + '/icc'
-        os.makedirs(odir, exist_ok=True)
-        outfile = odir + '/results_%s_%d.txt' % (split, epoch + 1)
-        print("Saving results to %s ..." % (outfile))
-        with open(outfile, 'w') as f:
-            f.write('average_icc: %.5f\n' % (o_avg_icc))
-
-        #save cdi
-        odir = args.odir + '/cdi'
-        os.makedirs(odir, exist_ok=True)
-        outfile = odir + '/results_%s_%d.txt' % (split, epoch + 1)
-        print("Saving results to %s ..." % (outfile))
-        with open(outfile, 'w') as f:
-            f.write('average_cdi: %.5f\n' % (o_avg_cdi))
+            f.write('classification acc: %.5f\n' % (overall_class_acc))
 
 
-def view_predictions(args, imgs, gts, preds, meta, bid, epoch):
+def view_predictions(args, imgs, gts, preds, recs, meta, bid, epoch):
     count = 0
-    max_save = 10 # number of images to save per batch: originally 1
+    max_save = 1 # number of images to save per batch: originally 1
     print("Plotting predictions")
     for j in range(len(preds)):
-        pred_kpts = preds[j]
-        gt_kpts = gts[j]
-        imgname = meta[j][1]
+        rec = recs[j]
+        pred = np.argmax(preds[j])
+        gt = gts[j]
+        true_label = args.idx2label[gt]
+        pred_label = args.idx2label[pred]
+        imgname = "epoch%d_T_%s_P_%s" % (epoch, true_label, pred_label)
         img = imgs[j]
-        save_prediction(args, img, imgname, gt_kpts, pred_kpts, bid, j, epoch)
+        save_prediction(args, img, rec, imgname, bid, j, epoch)
         count+=1
         if count >= max_save:
             break
