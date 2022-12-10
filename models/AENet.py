@@ -50,7 +50,8 @@ def AENet_step(args, item):
         inp = Variable(torch.from_numpy(imgs), requires_grad=False).float()
 
     targets = targets.contiguous()
-    inp = inp.transpose(3,2).transpose(2,1)/255.0
+    #inp = inp.transpose(3,2).transpose(2,1)/255.0
+    inp = inp.transpose(3,2).transpose(2,1)
     loss, rec_err, outputs = args.model.forward(inp,targets)
     pred, decoded = outputs
     loss = loss.mean()
@@ -102,6 +103,8 @@ class AENet(nn.Module):
         
         # Input size: [batch, 3, 32, 32]
         # Output size: [batch, 3, 32, 32]
+        self.args = args
+
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 12, 4, stride=2, padding=1),            # [batch, 12, 16, 16]
             nn.ReLU(),

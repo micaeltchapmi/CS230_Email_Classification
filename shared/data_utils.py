@@ -86,11 +86,18 @@ def preprocessing_CIFAR10_data(args, X_train, y_train, X_val, y_val, X_test, y_t
     X_test = np.reshape(X_test, (X_test.shape[0], -1)) # [10000, 3072]
     
     # Normalize the data: subtract the mean image
+    """
     mean_image = np.mean(X_train, axis = 0)
     args.mean_image = mean_image
     X_train -= mean_image
     X_val -= mean_image
     X_test -= mean_image
+    """
+
+    # normalize in range -1 and 1
+    X_train = (X_train - 127.5) / 127.5
+    X_val = (X_val - 127.5) / 127.5
+    X_test = (X_test - 127.5) / 127.5
 
     return X_train, y_train, X_val, y_val, X_test, y_test
 
@@ -101,8 +108,10 @@ def load_img(args, path, method=0):
 
 def save_prediction(args, image, rec, imgname, bid, img_id, epoch):
     W, H, C = image.shape
-    img = (image.reshape(-1) + args.mean_image).astype(np.uint8).reshape(W, H, C)
-    img_rec = np.transpose(((rec * 255.0).flatten() + args.mean_image).astype(np.uint8).reshape(C,W,H), (1,2,0))
+    #img = (image.reshape(-1) + args.mean_image).astype(np.uint8).reshape(W, H, C)
+    #img_rec = np.transpose(((rec * 255.0).flatten() + args.mean_image).astype(np.uint8).reshape(C,W,H), (1,2,0))
+    img = ((image.reshape(-1) * 127.5) + 127.5).astype(np.uint8).reshape(W, H, C)
+    img_rec = np.transpose(((rec * 127.5).flatten() + 127.5).astype(np.uint8).reshape(C,W,H), (1,2,0))
 
     fig = plt.figure()
     rows, columns = 1, 2

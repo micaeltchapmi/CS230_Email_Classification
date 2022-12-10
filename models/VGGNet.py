@@ -55,7 +55,8 @@ def VGGNet_step(args, item):
         inp = Variable(torch.from_numpy(imgs), requires_grad=False).float()
 
     targets = targets.contiguous()
-    inp = inp.transpose(3,2).transpose(2,1)/255.0
+    #inp = inp.transpose(3,2).transpose(2,1)/255.0
+    inp = inp.transpose(3,2).transpose(2,1)
     loss, rec_err, outputs = args.model.forward(inp,targets)
     pred, decoded = outputs
     loss = loss.mean()
@@ -78,13 +79,18 @@ class VGGNet(nn.Module):
         self.classifier = vgg16.classifier
 
         self.decoder = nn.Sequential(
-#             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),  # [batch, 48, 4, 4]
-#             nn.ReLU(),
-			nn.ConvTranspose2d(512, 256, 4, stride=1, padding=1),  # [batch, 24, 8, 8]
+            nn.ConvTranspose2d(512, 512, 3, stride=1, padding=1),  # [batch, 24, 8, 8]
             nn.ReLU(),
-			nn.ConvTranspose2d(256, 128, 4, stride=2, padding=1),  # [batch, 12, 16, 16]
+            nn.ConvTranspose2d(512, 256, 4, stride=1, padding=1),  # [batch, 24, 8, 8]
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 3, 4, stride=2, padding=1)   # [batch, 3, 32, 32]
+            nn.ConvTranspose2d(256, 256, 3, stride=1, padding=1),  # [batch, 24, 8, 8]
+            nn.ReLU(),
+            nn.ConvTranspose2d(256, 128, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 128, 3, stride=1, padding=1),  # [batch, 24, 8, 8]
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 3, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
+
         )
 
     def forward(self, x):
