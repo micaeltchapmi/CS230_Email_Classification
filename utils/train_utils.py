@@ -23,6 +23,8 @@ from data_utils import save_prediction
 from loss_utils import getLabelCount, getmeaniou, getconfmatrix
 import json
 from AENet import *
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
 
 
 def check_overwrite(fname):
@@ -233,6 +235,8 @@ class AverageMeter(object):
 
 
 def metrics(split, args, epoch=0):
+    features = []
+    labels = []
     with torch.no_grad():
         print("Metrics ....")
         args.model.eval()
@@ -254,6 +258,8 @@ def metrics(split, args, epoch=0):
             imgs, gts, meta = item
             N, W, H, C = imgs.shape
             lnm, losses, outputs = args.step(args, item)
+            features.extend(outputs[-1].tolist())
+            labels.extend(gts.tolist())
 
             overall_class_acc.append(losses[1])
             pred_i = outputs[0].cpu().numpy()
@@ -282,6 +288,10 @@ def metrics(split, args, epoch=0):
         with open(outfile, 'w') as f:
             f.write('classification acc: %.5f\n' % (overall_class_acc))
 
+    features = np.array(features)
+    labels = np.array(labels).reshape(-1, 1)
+    if args.eval:
+        plot_embeddings(args, features, labels)
 
 def view_predictions(args, imgs, gts, preds, recs, meta, bid, epoch):
     count = 0
@@ -300,3 +310,20 @@ def view_predictions(args, imgs, gts, preds, recs, meta, bid, epoch):
         if count >= max_save:
             break
     return
+
+def plot_embeddings(args, features, y_test):
+    tsne = TSNE().fit_transform(features)
+    tx, ty = tsne[:,0], tsne[:,1]
+    tx = (tx-np.min(tx)) / (np.max(tx) - np.min(tx))
+    ty = (ty-np.min(ty)) / (np.max(ty) - np.min(ty))
+    plt.figure(figsize = (16,12))
+
+    classes = args.label_names
+    for i in range(len(classes)):
+        y_i = y_test == i
+        plt.scatter(tx[y_i[:, 0]], ty[y_i[:, 0]], label=classes[i])
+    plt.legend(loc=4)
+    plt.gca().invert_yaxis()
+    out_dir = os.path.join(args.odir, "images")
+    plt.savefig(os.path.join(out_dir, "test_features_tsne.jpg"), bbox_inches='tight')
+    #plt.show()

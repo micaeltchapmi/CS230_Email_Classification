@@ -28,7 +28,7 @@ class FullModel(nn.Module):
 
     def forward(self, inputs, labels):
         outputs = self.model(inputs)
-        pred, decoded = outputs
+        pred, decoded, x_encoded = outputs
 
         rec_loss = self.loss_rec(decoded, inputs)
         classification_loss = self.loss_class(pred, labels)

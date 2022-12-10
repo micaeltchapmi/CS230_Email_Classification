@@ -58,7 +58,7 @@ def VGGNet_step(args, item):
     #inp = inp.transpose(3,2).transpose(2,1)/255.0
     inp = inp.transpose(3,2).transpose(2,1)
     loss, rec_err, outputs = args.model.forward(inp,targets)
-    pred, decoded = outputs
+    pred, decoded, x_encoded = outputs
     loss = loss.mean()
 
     class_acc = np.mean(torch.argmax(pred,1).detach().cpu().numpy()==gt) * 100
@@ -99,4 +99,4 @@ class VGGNet(nn.Module):
         decoded = self.decoder(pooled)
         x_encoded = pooled.reshape(x.shape[0], -1)
         pred = self.classifier(x_encoded)
-        return pred, decoded
+        return pred, decoded, x_encoded
