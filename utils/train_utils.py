@@ -18,11 +18,12 @@ import torch.optim as optim
 from multiprocessing import Queue
 from tqdm import tqdm
 from shared.dataprocess import kill_data_processes
-from shared.datasets.cifar10 import CIFAR10DataProcess
+from shared.datasets.ECD import ECD_DataProcess
 from data_utils import save_prediction
 from loss_utils import getLabelCount, getmeaniou, getconfmatrix
 import json
 from AENet import *
+from VGGNet import *
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
@@ -40,7 +41,7 @@ def check_overwrite(fname):
 
 
 def data_setup(args, phase, num_workers, repeat):
-    DataProcessClass = CIFAR10DataProcess
+    DataProcessClass = ECD_DataProcess
     # Initialize data processes
     data_queue = Queue(4 * num_workers)
     data_processes = []
@@ -235,7 +236,6 @@ class AverageMeter(object):
 
 
 def metrics(split, args, epoch=0):
-    features = []
     labels = []
     with torch.no_grad():
         print("Metrics ....")
@@ -247,7 +247,6 @@ def metrics(split, args, epoch=0):
         overall_class_acc = []
         preds = []
         truths = []
-        recs = []
         if Nb*batch_size < N:
             Nb += 1
         # iterate over dataset in batches
@@ -258,20 +257,17 @@ def metrics(split, args, epoch=0):
             imgs, gts, meta = item
             N, W, H, C = imgs.shape
             lnm, losses, outputs = args.step(args, item)
-            features.extend(outputs[-1].tolist())
             labels.extend(gts.tolist())
 
             overall_class_acc.append(losses[1])
             pred_i = outputs[0].cpu().numpy()
-            rec_i = outputs[1].cpu().numpy()
 
             preds.extend(pred_i)
             truths.extend(gts)
-            recs.extend(rec_i)
             
             #save one image from each batch, and at most 5 images for viewing sample predictions
             if count < 5:
-                view_predictions(args, imgs, gts, pred_i, rec_i, meta, bidx, epoch)
+                view_predictions(args, imgs, gts, pred_i, meta, bidx, epoch)
                 count+=1
 
         preds = np.asarray(preds)
@@ -288,24 +284,27 @@ def metrics(split, args, epoch=0):
         with open(outfile, 'w') as f:
             f.write('classification acc: %.5f\n' % (overall_class_acc))
 
+    """
+    #plot T-SNE embeddings
     features = np.array(features)
     labels = np.array(labels).reshape(-1, 1)
     if args.eval:
         plot_embeddings(args, features, labels)
+     #TODO: visualize weights?
+    """
 
-def view_predictions(args, imgs, gts, preds, recs, meta, bid, epoch):
+def view_predictions(args, imgs, gts, preds, meta, bid, epoch):
     count = 0
     max_save = 1 # number of images to save per batch: originally 1
     print("Plotting predictions")
     for j in range(len(preds)):
-        rec = recs[j]
         pred = np.argmax(preds[j])
         gt = gts[j]
         true_label = args.idx2label[gt]
         pred_label = args.idx2label[pred]
-        imgname = "epoch%d_T_%s_P_%s" % (epoch, true_label, pred_label)
+        imgname = "epoch%d_T_%s_P_%s_" % (epoch, true_label, pred_label)
         img = imgs[j]
-        save_prediction(args, img, rec, imgname, bid, j, epoch)
+        save_prediction(args, img, imgname, bid, j, epoch)
         count+=1
         if count >= max_save:
             break

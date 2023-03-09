@@ -4,7 +4,7 @@
 PROGRAM='main.py'
 NET='AENet'
 PRETRAINED=1 #0 for original, 1 for pretrained; currently only used by AlexNet
-DATASET='CIFAR10'
+DATASET='EC_Data'
 BATCH_SIZE=8
 OPTIM='adam'
 MOMENTUM=0.9
@@ -12,7 +12,7 @@ LR=1e-3
 SEED=1
 TRAIN=1
 EVAL=$((1-$TRAIN))
-RESUME=1
+RESUME=0
 SAVE_NTH_EPOCH=5
 TEST_NTH_EPOCH=$SAVE_NTH_EPOCH
 TEST_SPLIT='val' #train, val. Train is to overfit

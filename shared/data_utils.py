@@ -106,25 +106,23 @@ def load_img(args, path, method=0):
     return img
 
 
-def save_prediction(args, image, rec, imgname, bid, img_id, epoch):
+def save_prediction(args, image, imgname, bid, img_id, epoch):
     W, H, C = image.shape
-    #img = (image.reshape(-1) + args.mean_image).astype(np.uint8).reshape(W, H, C)
-    #img_rec = np.transpose(((rec * 255.0).flatten() + args.mean_image).astype(np.uint8).reshape(C,W,H), (1,2,0))
-    img = ((image.reshape(-1) * 127.5) + 127.5).astype(np.uint8).reshape(W, H, C)
-    img_rec = np.transpose(((rec * 127.5).flatten() + 127.5).astype(np.uint8).reshape(C,W,H), (1,2,0))
 
     fig = plt.figure()
-    rows, columns = 1, 2
+    rows, columns = 1, 1
     fig.add_subplot(rows, columns, 1)
 
-    plot = plt.imshow(img)
+    plot = plt.imshow(image)
     plot.axes.get_xaxis().set_visible(False)
     plot.axes.get_yaxis().set_visible(False)
 
+    """
     fig.add_subplot(rows, columns, 2)
     plot2 = plt.imshow(img_rec)
     plot2.axes.get_xaxis().set_visible(False)
     plot2.axes.get_yaxis().set_visible(False)
+    """
 
     plt.title(imgname)
     fig.set_size_inches(np.array(fig.get_size_inches()))

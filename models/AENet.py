@@ -27,9 +27,8 @@ def AENet_create_model(args):
     args.gpus = list(range(torch.cuda.device_count()))
     args.nparams = sum([p.numel() for p in model.parameters()])
     print('Total number of parameters: {}'.format(args.nparams))
-    criterion_rec = nn.MSELoss()
     criterion_class = nn.CrossEntropyLoss()
-    model = FullModel(args, model, criterion_rec, criterion_class)
+    model = FullModel(args, model, criterion_class)
     
     if len(args.gpus) > 0:
         model = nn.DataParallel(model, device_ids=args.gpus).cuda()
@@ -51,16 +50,16 @@ def AENet_step(args, item):
 
     targets = targets.contiguous()
     #inp = inp.transpose(3,2).transpose(2,1)/255.0
-    inp = inp.transpose(3,2).transpose(2,1)
-    loss, rec_err, outputs = args.model.forward(inp,targets)
-    pred, decoded, x_encoded = outputs
+    # normalize input image to range [-1, 1]
+    inp = ( (inp - 127.5) / 127.5 ).transpose(3,2).transpose(2,1)
+    loss, pred = args.model.forward(inp,targets)
     loss = loss.mean()
 
     class_acc = np.mean(torch.argmax(pred,1).detach().cpu().numpy()==gt) * 100
 
-    losses = [loss, class_acc, rec_err]
-    loss_names = ['loss','class_acc', 'rec_err']
-    return loss_names, losses, outputs
+    losses = [loss, class_acc]
+    loss_names = ['loss', 'class_acc']
+    return loss_names, losses, pred
 
 class AENet_simple(nn.Module):
     def __init__(self, args):
@@ -77,12 +76,6 @@ class AENet_simple(nn.Module):
             nn.MaxPool2d(2, 2)
         )
 
-        self.decoder = nn.Sequential(
-			nn.ConvTranspose2d(4, 16, 2, stride=2),
-            nn.ReLU(),
-            nn.ConvTranspose2d(16, 3, 2, stride=2)
-        )
-
         self.classifier = nn.Sequential(
             nn.Linear(8*8*4, 64),
             nn.ReLU(),
@@ -91,18 +84,15 @@ class AENet_simple(nn.Module):
 
     def forward(self, x):
         encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        
         x_encoded = encoded.reshape(x.shape[0], -1)
         pred = self.classifier(x_encoded)
-        return pred, decoded
+        return pred
 
 class AENet(nn.Module):
     def __init__(self, args):
         super(AENet, self).__init__()
         
-        # Input size: [batch, 3, 32, 32]
-        # Output size: [batch, 3, 32, 32]
+        # Input size: [batch, 3, 100, 100]
         self.args = args
 
         self.encoder = nn.Sequential(
@@ -116,18 +106,8 @@ class AENet(nn.Module):
 #             nn.ReLU(),
         )
 
-        self.decoder = nn.Sequential(
-#             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),  # [batch, 48, 4, 4]
-#             nn.ReLU(),
-			nn.ConvTranspose2d(48, 24, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
-            nn.ReLU(),
-			nn.ConvTranspose2d(24, 12, 4, stride=2, padding=1),  # [batch, 12, 16, 16]
-            nn.ReLU(),
-            nn.ConvTranspose2d(12, 3, 4, stride=2, padding=1)   # [batch, 3, 32, 32]
-        )
-
         self.classifier = nn.Sequential(
-            nn.Linear(48*4*4, 2048),
+            nn.Linear(48*12*12, 2048),
             nn.ReLU(),
             nn.Linear(2048, 512),
             nn.ReLU(),
@@ -136,7 +116,6 @@ class AENet(nn.Module):
 
     def forward(self, x):
         encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
         x_encoded = encoded.reshape(x.shape[0], -1)
         pred = self.classifier(x_encoded)
-        return pred, decoded, x_encoded
+        return pred
