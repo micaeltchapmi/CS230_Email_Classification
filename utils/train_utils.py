@@ -24,6 +24,7 @@ from loss_utils import getLabelCount, getmeaniou, getconfmatrix
 import json
 from AENet import *
 from VGGNet import *
+from ResNet import *
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 

@@ -9,7 +9,6 @@ import albumentations as A
 data_dir = "./data/images"
 N = 11026
 resize_dim = [100,  100]
-#TODO: Resize to 100x100, augment to 500 images per category
 
 def count_files_in_directory():
     count = 0
@@ -156,14 +155,28 @@ def show_samples():
     
     plot_images(all_imgs, n_row=5, n_col=5)
 
+def augment_test(img_path):
+    # blur, horizontal flip, gaussian noise, brightness, contrast
 
+    transform_fn = A.Compose([
+        #A.RandomBrightnessContrast(p=1.0),
+        #A.HorizontalFlip(p=1.0),
+        A.GaussNoise(p=1.0),
+        #A.AdvancedBlur(p=1.0)
+    ])
+
+    img = cv2.cvtColor(cv2.imread(img_path, 3), cv2.COLOR_BGR2RGB)
+    # augment image with a random combination of augmentation methods
+    resized_img = resize(img)  
+    augmented_img = transform_fn(image=resized_img)["image"]
+
+    plt.imshow(augmented_img)
+    plt.axis("off")
+    plt.show()
 
 
 def main():
-    #augment_images()
-    show_samples()
+    augment_images()
 
 if __name__=="__main__":
     main()
-
-#img_file = ".data/images/armature/armature-coil001.jpg"

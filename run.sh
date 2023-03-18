@@ -2,10 +2,10 @@
 #source venv/bin/activate
 
 PROGRAM='main.py'
-NET='AENet'
-PRETRAINED=1 #0 for original, 1 for pretrained; currently only used by AlexNet
+NET='ResNet'
+PRETRAINED=1
 DATASET='EC_Data'
-BATCH_SIZE=8
+BATCH_SIZE=128
 OPTIM='adam'
 MOMENTUM=0.9
 LR=1e-3
@@ -15,7 +15,7 @@ EVAL=$((1-$TRAIN))
 RESUME=0
 SAVE_NTH_EPOCH=5
 TEST_NTH_EPOCH=$SAVE_NTH_EPOCH
-TEST_SPLIT='val' #train, val. Train is to overfit
+TEST_SPLIT='val'
 NWORKERS=4
 EPOCHS=50
 
