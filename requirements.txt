@@ -56,9 +56,8 @@ tokenizers==0.13.2
 toml==0.10.2
 tomli==2.0.1
 torch==1.13.1
-torchaudio==0.11.0
+torchaudio==0.13.1
 torchfile==0.1.0
-torchnet==0.0.4
 torchvision==0.14.1
 tornado==6.1
 tqdm==4.64.0
