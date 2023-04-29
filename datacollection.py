@@ -42,7 +42,7 @@ def save_label(Email_Data):
     Label = Labels[Email_Data["Label"]]
     ID =  Email_Data["email_id"]
 
-    out_dir = os.path.join(save_dir, Category, Label)
+    out_dir = os.path.join(save_dir, Label, Category)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, ID + ".json")
     
@@ -57,6 +57,8 @@ def test_save_label():
             "Text": "Your request has been fulfilled",
             "Sender": "Paul@stanford.edu"
             }
+    #TODO: add other fields that could be useful like:
+    #Number of replies, attachments, etc
     data2 = {"email_id": "00002" ,
             "Category": "2" ,
             "Label": "0",
