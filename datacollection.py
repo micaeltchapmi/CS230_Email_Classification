@@ -17,9 +17,9 @@ import os
 import json
 import numpy as np
 
-Email_Categories = {"0" : "Passed Events",
-                    "1" : "Fufilled requests",
-                    "2" : "Automated Responses"}
+Email_Categories = {"0" : "Passed_Events",
+                    "1" : "Fufilled_requests",
+                    "2" : "Automated_Responses"}
 Labels = {"0": "Delete",
           "1": "Keep"}
 
