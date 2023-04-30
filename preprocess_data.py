@@ -1,182 +1,98 @@
 import os
-import cv2
-import os.path as osp
-import matplotlib.pyplot as plt
+import json
+import string
+import nltk
+#nltk.download('stopwords')
+#nltk.download('punkt')
+#nltk.download('wordnet')
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import glob
 import numpy as np
-import random
-import albumentations as A
 
-data_dir = "./data/images"
-N = 11026
-resize_dim = [100,  100]
+save_dir = "./processed_data"
+Email_Categories = {"0" : "Passed_Events",
+                    "1" : "Fufilled_requests",
+                    "2" : "Automated_Responses"}
+Labels = {"0": "Delete",
+          "1": "Keep"}
 
-def count_files_in_directory():
-    count = 0
-    for dir in os.listdir(data_dir):
-        count += len(os.listdir(osp.join(data_dir, dir)))
-    print("total number of files : %d" % (count))
+def save_label(Email_Data):
+    #Email_Data: dictionary containing email content and metadata information for a single email
+    #label: 1: keep, 0: delete
+    #Category: Number indicating one of the predefined Email Categories
+    Category = Email_Categories[Email_Data["Category"]]
+    Label = Labels[Email_Data["Label"]]
+    ID =  Email_Data["email_id"]
 
-def get_min_dims():
-    count = 1
-    min_area = 1e10
-    min_height_width = []
-    for d in os.listdir(data_dir):
-        files = os.listdir(osp.join(data_dir, d))
-        for f in files:
-            print("processing %d / %d" % (count, N))
-            count+=1
-            img = cv2.imread(osp.join(data_dir, d, f))
-            W,H,C = img.shape
-            cur_area = W * H
-            if cur_area < min_area:
-                min_height_width = [W, H]
-                min_area = cur_area
-
-def plot_images(imgs, n_row=1, n_col=1):
-    _, axs = plt.subplots(n_row, n_col, figsize=(9, 6))
-    axs = axs.flat
-    for img, ax in zip(imgs, axs):
-        ax.imshow(img, interpolation='nearest', aspect='auto')
+    out_dir = os.path.join(save_dir, Label, Category)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, ID + ".json")
     
-    # one liner to remove *all axes in all subplots*
-    plt.setp(plt.gcf().get_axes(), xticks=[], yticks=[]);
-    
-    plt.show()
-
-def resize(img, W=100, H=100):
-    resized_image = cv2.resize(img, (W, H), interpolation=cv2.INTER_LINEAR)
-    return resized_image  
-
-def resize_images():
-    count = 1
-    for d in os.listdir(data_dir):
-        files = os.listdir(osp.join(data_dir, d))
-        for f in files:
-            print("processing %d / %d" % (count, N))
-            count+=1
-            img = cv2.imread(osp.join(data_dir, d, f))
-            resized_img = resize(img)
-            plot_images([img, resized_img], 1, 2)
-
-def save_images(imgs, split, d):
-    count = 0
-    outdir = "./data/EC_Data/%s/%s" % (split, d)
-    os.makedirs(outdir, exist_ok=True)
-
-    for img in imgs:
-        fpath = osp.join(outdir, "%s_%05d.png" % (d, count))
-        cv2.imwrite(fpath, img)
-        count+=1
-
-def split_and_save_images(imgs, d):
-
-    train, val, test = [], [], []
-    n = len(imgs)
-    train = imgs[0 : int(0.7*n)]
-    val = imgs[int(0.7*n) : int(0.9*n)]
-    test = imgs[int(0.9*n) : ]
-
-    save_images(train, "train", d)
-    save_images(val, "val", d)
-    save_images(test, "test", d)
-
-def augment(img_files, d):
-    # blur, horizontal flip, gaussian noise, brightness, contrast
-
-    transform_fn = A.Compose([
-        A.RandomBrightnessContrast(p=0.5),
-        A.HorizontalFlip(p=0.5),
-        A.GaussNoise(p=0.5),
-        A.AdvancedBlur(p=0.5)
-    ])
-
-    augmented_images = []
-
-    # read and resize current images
-    for f in img_files:
-        img = cv2.imread(osp.join(data_dir, d, f))
-        resized_img = resize(img)
-        augmented_images.append(resized_img)
-
-    # augment to obtain 500 images
-    random_indices = list(range(len(img_files)))
-    random.shuffle(random_indices)
-    n = len(img_files)
-    i = 0
-    while len(augmented_images) < 500:
-        # read random img in directory
-        file_indx = random_indices[i % n]
-        img = cv2.imread(osp.join(data_dir, d, img_files[file_indx]))
-        resized_img = resize(img)
-        
-        # augment image with a random combination of augmentation methods  
-        augmented_img = transform_fn(image=resized_img)["image"]
-
-        augmented_images.append(augmented_img)
-
-        i += 1
-    
-    return augmented_images
-
-def augment_images():
-    count = 1
-    N = len(os.listdir(data_dir))
-    for d in os.listdir(data_dir):
-        print("processing dir %d / %d" % (count, N))
-        files = os.listdir(osp.join(data_dir, d))
-
-        #augment the images in this directory
-        augmented_images = augment(files, d)
-
-        # save the augmented images to disk
-        split_and_save_images(augmented_images, d)
-        count += 1
-
-def show_samples():
-    count = 1
-    N = len(os.listdir(data_dir))
-
-    all_imgs = []
-
-    for d in os.listdir(data_dir)[0:5]:
-        print("processing dir %d / %d" % (count, N))
-        files = os.listdir(osp.join(data_dir, d))
-        count+=1
-
-        # read and resize current images
-        i = 0
-        for f in files:
-            img = cv2.imread(osp.join(data_dir, d, f))
-            resized_img = resize(img)
-            all_imgs.append(resized_img)
-            i+=1
-            if i == 5:
-                break
-    
-    plot_images(all_imgs, n_row=5, n_col=5)
-
-def augment_test(img_path):
-    # blur, horizontal flip, gaussian noise, brightness, contrast
-
-    transform_fn = A.Compose([
-        #A.RandomBrightnessContrast(p=1.0),
-        #A.HorizontalFlip(p=1.0),
-        A.GaussNoise(p=1.0),
-        #A.AdvancedBlur(p=1.0)
-    ])
-
-    img = cv2.cvtColor(cv2.imread(img_path, 3), cv2.COLOR_BGR2RGB)
-    # augment image with a random combination of augmentation methods
-    resized_img = resize(img)  
-    augmented_img = transform_fn(image=resized_img)["image"]
-
-    plt.imshow(augmented_img)
-    plt.axis("off")
-    plt.show()
-
+    with open(out_path, 'w') as f:
+        json.dump(Email_Data, f)
 
 def main():
-    augment_images()
+    data_dir = "./data"
+    files = glob.glob(data_dir+"/*/*/*")
+
+    #DO THE SPLIT TRAIN/VAL/TEST HERE AND RUN
+    Train, Val, Test = [], [], []
+
+    for l in os.listdir(data_dir):
+        for c in os.listdir(os.path.join(data_dir, l)):
+            files_c = os.listdir(os.path.join(data_dir, l, c))
+            n = len(files_c)
+            np.random.shuffle(files_c)
+            train, val, test = files_c[0:int(0.7*n)], files_c[int(0.7*n) : int(0.9*n)], files_c[int(0.9*n):]
+            train = [os.path.join(data_dir, l, c, k) for k in train]
+            val = [os.path.join(data_dir, l, c, k) for k in val]
+            test = [os.path.join(data_dir, l, c, k) for k in test]
+            Train.extend(train)
+            Val.extend(val)
+            Test.extend(test)
+
+    # Create dataframe and add field to remember which files were train/val
+    emails = []
+    for f in Train:
+        email_i = json.load(open(f))
+        email_i["set"] = "Train"
+        emails.append(email_i)
+    for f in Val:
+        email_i = json.load(open(f))
+        email_i["set"] = "Val"
+        emails.append(email_i)
+
+    df = pd.DataFrame.from_dict(emails)
+
+    # Data cleaning
+    df['Text'] = df['Text'].apply(lambda x: x.lower()) # Convert all text to lowercase
+    df['Text'] = df['Text'].apply(lambda x: x.translate(str.maketrans('', '', string.punctuation))) # Remove punctuation marks
+    stop_words = set(stopwords.words('english'))
+    df['Text'] = df['Text'].apply(lambda x: ' '.join([word for word in word_tokenize(x) if word not in stop_words])) # Remove stop words
+    
+    # Lemmatization
+    lemmatizer = WordNetLemmatizer()
+    df['Text'] = df['Text'].apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in word_tokenize(x)])) # Lemmatize words
+
+    # Vectorization
+    #vectorizer = CountVectorizer() #counts number of times word appears in text
+    vectorizer = TfidfVectorizer() #better because uses both count and importance of words in corpus
+    X = vectorizer.fit_transform(df['Text'])
+
+    df["Text_Vector"] = X.toarray().tolist()
+    
+    # Split data
+    email_data = df.to_dict(orient="records")
+    for e in email_data:
+        save_label(e)
+    
 
 if __name__=="__main__":
     main()
