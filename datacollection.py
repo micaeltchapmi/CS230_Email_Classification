@@ -6,7 +6,7 @@ import email
 import nltk
 from nltk.tokenize import word_tokenize
 from email.header import decode_header
-
+import glob
 from imap_tools import MailBox, AND
 
 # Server is the address of the IMAP server
@@ -65,24 +65,22 @@ def save_label(Email_Data):
 
 
 def test_save_label():
-    
-    #TODO: add other fields that could be useful like:
-    #Number of replies, attachments, etc
+    # TODO: add other fields that could be useful like:
+    # Number of replies, attachments, etc
 
     for i, k in enumerate(range(36)):
         id = "%05d" % (i)
         Category = str((i % 3))
-        Label = str((i%2))
+        Label = str((i % 2))
         Text = "%d message" % (i)
         Sender = "%i@domain.edu" % (i)
-        data = {"email_id": id ,
-            "Category": Category ,
-            "Label": Label,
-            "Text": Text,
-            "Sender": Sender
-            }
+        data = {"email_id": id,
+                "Category": Category,
+                "Label": Label,
+                "Text": Text,
+                "Sender": Sender
+                }
         save_label(data)
-        
 
 
 # account credentials
@@ -122,27 +120,43 @@ def read_email():
                         mark_seen=True,
                         bulk=True)
 
+    # Adding emails into a dictionary
+    saved_data = {}
     for msg in messages:
+        files = glob.glob(save_dir + "/*/*/*")
+
+        # For loop to check if the data is already labelled
+        for file in files:
+            info = file.split("\\")
+            info2 = info[-1]
+            info3 = info2.split(".")
+            myinfo = info3[0]
+            saved_data[myinfo] = myinfo
+
+    for msg in messages:
+        if msg.uid in saved_data:
+            continue
+
         category_label, class_label = label_category(
             msg)  # Call the function label_category for the user to input the labels in the training data
+        if class_label == -1:
+            continue
         Email_Data = {"Category": category_label,
-                      "Labels": class_label,
-                      "email_id": msg.id}
-
+                      "Label": class_label,
+                      "email_id": msg.uid}
+        print(msg.uid)
         save_label(Email_Data)  # Calling save_label with email data
-        break
 
 
 # Define a function to label an email based on its content
 def label_category(email):
     """Prompts the user to label an email"""
     prompt1 = "Input the category \n 0: Passed_Events, 1: Fufilled_requests, 2: Automated_Responses"
-    prompt2 = "Input the labels \n 0: Delete, 1: Keep "
+    prompt2 = "Input the labels \n 0: Delete, 1: Keep  -1: Skip"
 
     print(email.from_, ': ', email.subject)
     print(email.text)
     label1 = input(prompt1)
-
     label2 = input(prompt2)
     return label1, label2
 
