@@ -65,22 +65,24 @@ def save_label(Email_Data):
 
 
 def test_save_label():
-    data1 = {"email_id": "00001",
-             "Category": "1",
-             "Label": "1",
-             "Text": "Your request has been fulfilled",
-             "Sender": "Paul@stanford.edu"
-             }
-    # TODO: add other fields that could be useful like:
-    # Number of replies, attachments, etc
-    data2 = {"email_id": "00002",
-             "Category": "2",
-             "Label": "0",
-             "Text": "Do not reply. This is an automated response",
-             "Sender": "bot@amazon.org"
-             }
-    save_label(data1)
-    save_label(data2)
+    
+    #TODO: add other fields that could be useful like:
+    #Number of replies, attachments, etc
+
+    for i, k in enumerate(range(36)):
+        id = "%05d" % (i)
+        Category = str((i % 3))
+        Label = str((i%2))
+        Text = "%d message" % (i)
+        Sender = "%i@domain.edu" % (i)
+        data = {"email_id": id ,
+            "Category": Category ,
+            "Label": Label,
+            "Text": Text,
+            "Sender": Sender
+            }
+        save_label(data)
+        
 
 
 # account credentials
