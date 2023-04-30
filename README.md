@@ -1,8 +1,8 @@
 # CS432_Project
-Final project for CS432 Computer Vision for Education and Social Science Research
+Final project for CS 230 Deep Learning
 Authors: 
 
-## Authors: Micael Tchapmi
+## Authors: Micael Tchapmi and Brian Langat
 
 ## A. Running the code
 
