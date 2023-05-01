@@ -143,8 +143,9 @@ def read_email():
             continue
         Email_Data = {"Category": category_label,
                       "Label": class_label,
-                      "email_id": msg.uid}
-        print(msg.uid)
+                      "email_id": msg.uid,
+                      "Text": msg.txt}
+
         save_label(Email_Data)  # Calling save_label with email data
 
 
