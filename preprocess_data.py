@@ -30,8 +30,9 @@ def save_label(Email_Data):
     Category = Email_Categories[Email_Data["Category"]]
     Label = Labels[Email_Data["Label"]]
     ID =  Email_Data["email_id"]
+    Set = Email_Data["set"]
 
-    out_dir = os.path.join(save_dir, Label, Category)
+    out_dir = os.path.join(save_dir, Set, Label, Category)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, ID + ".json")
     
@@ -68,8 +69,13 @@ def main():
         email_i = json.load(open(f))
         email_i["set"] = "Val"
         emails.append(email_i)
+    for f in Test:
+        email_i = json.load(open(f))
+        email_i["set"] = "Test"
+        emails.append(email_i)
 
     df = pd.DataFrame.from_dict(emails)
+    #Preprocess the train and validation 
 
     # Data cleaning
     df['Text'] = df['Text'].apply(lambda x: x.lower()) # Convert all text to lowercase
@@ -77,17 +83,24 @@ def main():
     stop_words = set(stopwords.words('english'))
     df['Text'] = df['Text'].apply(lambda x: ' '.join([word for word in word_tokenize(x) if word not in stop_words])) # Remove stop words
     
-    # Lemmatization
+    # Lemmatization 
     lemmatizer = WordNetLemmatizer()
     df['Text'] = df['Text'].apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in word_tokenize(x)])) # Lemmatize words
 
     # Vectorization
     #vectorizer = CountVectorizer() #counts number of times word appears in text
     vectorizer = TfidfVectorizer() #better because uses both count and importance of words in corpus
-    X = vectorizer.fit_transform(df['Text'])
 
-    df["Text_Vector"] = X.toarray().tolist()
-    
+    #Fit vectorizer only on train then transform on Val and test data to avoid data leakage 
+    train_pos = df["set"].isin(["Train"])
+    vectorizer.fit(df[train_pos]['Text'])
+
+    #Transform on train val and test
+    Text_Vectors = vectorizer.transform(df['Text'])
+
+    # add text vectors to dataframe
+    df["Text_Vector"] = Text_Vectors.toarray().tolist()
+
     # Split data
     email_data = df.to_dict(orient="records")
     for e in email_data:
