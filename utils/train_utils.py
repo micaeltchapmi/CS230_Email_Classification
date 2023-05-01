@@ -18,7 +18,7 @@ import torch.optim as optim
 from multiprocessing import Queue
 from tqdm import tqdm
 from shared.dataprocess import kill_data_processes
-from shared.datasets.ECD import ECD_DataProcess
+from shared.datasets.Gmail import Gmail_DataProcess
 from data_utils import save_prediction
 from loss_utils import getLabelCount, getmeaniou, getconfmatrix
 import json

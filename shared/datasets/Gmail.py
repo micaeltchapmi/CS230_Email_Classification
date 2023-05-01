@@ -16,7 +16,7 @@ from data_utils import show_image, get_CIFAR10_data, preprocessing_CIFAR10_data,
 sys.path.insert(0, './')
 
 
-class ECD_DataProcess(DataProcess):
+class Gmail_DataProcess(DataProcess):
 
     def __init__(self, data_queue, args, split='train', repeat=True):
         """CDI dataloader.
@@ -27,8 +27,8 @@ class ECD_DataProcess(DataProcess):
         """
 
         # Load dataset
-        args.DATA_PATH = "./data/EC_Data/%s" % (split)
-        labels = os.listdir(args.DATA_PATH)
+        args.DATA_PATH = "./processed_data/%s" % (split)
+        labels = ["Keep", "Delete"]
         args.labelsdict = {}
         args.idx2label = {}
 
@@ -37,7 +37,7 @@ class ECD_DataProcess(DataProcess):
             args.idx2label[i] = str(l)
         args.num_classes = len(args.labelsdict)
 
-        data_paths = [f for f in glob.glob(args.DATA_PATH+"/*/*")]
+        data_paths = [f for f in glob.glob(args.DATA_PATH+"/*/*/*")]
 
         self.data_paths = data_paths
         self.args = args
@@ -46,16 +46,16 @@ class ECD_DataProcess(DataProcess):
 
     def getSample(self, args, fname):
         #read img local computer
-        img = cv2.imread(fname)
-        label = fname.split('/')[-2]
-        gt = np.asarray(args.labelsdict[label])
-        meta = fname
+        email_dict = json.load(open(fname))
+        text_vector = np.asarray(email_dict["Text_Vector"])
+        gt = np.asarray(email_dict["Label"])
+        meta = email_dict
 
-        return img, gt, meta
+        return text_vector, gt, meta
     
     def load_data(self, fname):
-        imgs, gts, meta = self.getSample(self.args, fname)
-        return imgs[np.newaxis, ...], gts[np.newaxis, ...], meta
+        text_vectors, gts, meta = self.getSample(self.args, fname)
+        return text_vectors[np.newaxis, ...], gts[np.newaxis, ...], meta
 
     def collate(self, batch):
         imgs, gts, meta = list(zip(*batch))
@@ -68,13 +68,13 @@ def test_process():
     from multiprocessing import Queue
     parser = argparse.ArgumentParser(description='')
     args = parser.parse_args()
-    args.dataset = 'ECD' #dataset name
+    args.dataset = 'Gmail' #dataset name
     args.nworkers = 1
     args.batch_size = 2
     data_processes = []
     data_queue = Queue(8)
     for i in range(args.nworkers):
-        data_processes.append(ECD_DataProcess(data_queue, args, split='train',
+        data_processes.append(Gmail_DataProcess(data_queue, args, split='train',
                                                repeat=False))
         data_processes[-1].start()
     N = len(data_processes[0].data_paths)
@@ -83,12 +83,11 @@ def test_process():
     if Nb*batch_size < N:
         Nb += 1
 
-    for imgs, gts, meta in get_while_running(data_processes, data_queue, 0):
-        #check labels visually
-        n, w, h, c = imgs.shape
-        for i in range(len(imgs)):
-            show_image(imgs[i], gts[i], meta[i])
-            break
+    for text_vectors, gts, meta in get_while_running(data_processes, data_queue, 0):
+        #check data is loaded properly with correct shape
+        print(text_vectors.shape)
+        print(gts.shape)
+        print(len(meta))
         break
     kill_data_processes(data_queue, data_processes)
 
