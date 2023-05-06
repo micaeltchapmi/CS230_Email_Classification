@@ -7,7 +7,7 @@ Authors:
 ## A. Running the code
 
 ## Clone Repository
-    git clone https://github.com/micaeltchapmi/Electronics_Classification.git
+    git clone https://github.com/micaeltchapmi/Emails_Classification.git
 
 ## Data Preprocessing
     Download data from Kaggle [here](https://www.kaggle.com/datasets/aryaminus/electronic-components) and place into a data/images directory in the working directory. Then run:
