@@ -28,7 +28,7 @@ class Gmail_DataProcess(DataProcess):
 
         # Load dataset
         args.DATA_PATH = "./processed_data/%s" % (split)
-        labels = ["Keep", "Delete"]
+        labels = ["Delete", "Keep"]
         args.labelsdict = {}
         args.idx2label = {}
 
