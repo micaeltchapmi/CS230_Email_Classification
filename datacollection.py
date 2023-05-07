@@ -1,5 +1,7 @@
 import os
 import json
+from datetime import datetime
+
 import numpy as np
 import imaplib
 import email
@@ -7,7 +9,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 from email.header import decode_header
 import glob
-from imap_tools import MailBox, AND
+#from imap_tools import MailBox, AND, A
 
 # Server is the address of the IMAP server
 
@@ -86,9 +88,8 @@ def test_save_label():
 # account credentials
 def read_email():
     username = "brianlangat11@gmail.com"
-    password = "kdhxjkcilnylzcgd"
+    password = ""
 
-    """"
     # create an IMAP4 class with SSL
     imap = imaplib.IMAP4_SSL("imap.gmail.com")
     # authenticate
@@ -97,10 +98,13 @@ def read_email():
     # select the mailbox I want to delete in
     # if you want SPAM, use imap.select("SPAM") instead
     imap.select("INBOX")
+    imap.select('[Gmail]/Primary')
+    status, messages_all = imap.search(None, 'ALL')
+    messages = messages_all[0].split()[-100:]
     # to get all mails
-    status, messages = imap.search(None, 'FROM "faridacheptoo@gmail.com"')
+    # status, messages = imap.search(None, 'FROM "faridacheptoo@gmail.com"')
     # print(messages)
-
+    """"
     for num in messages[0].split():
         result, data = imap.fetch(num, '(RFC822)')
         msg = data[0][1]
@@ -109,7 +113,9 @@ def read_email():
         print('Subject:', msg['Subject'])
         # print('From:', msg['From'])
         break
-        """
+        
+    """
+    """"
     mb = MailBox('imap.gmail.com').login(username, password, "INBOX")
 
     # Fetch all unseen emails containing "xyz.com" in the from field
@@ -118,19 +124,22 @@ def read_email():
     # (as opposed to in streaming which is slower but uses less memory)
 
     # Selecting only email from a specific user
-    """
+   
     messages = mb.fetch(criteria=AND(seegitn=True, from_="faridacheptoo@gmail.com"),
                         mark_seen=True,
                         bulk=True)
-    """
+  
     # fetch last 100 emails in inbox
     messages = mb.fetch(AND(seen=True), limit=10, reverse=True)
-
+    """
+    """
     # fetch emails from specific dates
-
-    #messages = mbox.fetch(mbox.keys()[-100:], reverse=True)
-    # Fetching all messages
-    # messages = mb.fetch()
+    # date_lt =Earlier than
+    # date_gte = Within or later than
+    date_obj = datetime.date(2023, 5, 7, 10, 30, 0)
+    messages = mb.fetch(AND(seen=True, date_lt=date_obj), reverse=True)
+    # messages = mb.fetch(A(date_lt=datetime.date(2023, 5, 6), date_gte=datetime.date(2022, 12, 31)))
+    """
 
     # Adding emails into a dictionary
     saved_data = {}
@@ -148,8 +157,7 @@ def read_email():
             mailID_split = mailID.split(".")
             mailID_num = mailID_split[0]
             saved_data[mailID_num] = mailID_num
-            print("Here2")
-    print("Here3")
+
     for msg in messages:
         if msg.uid in saved_data:
             continue
