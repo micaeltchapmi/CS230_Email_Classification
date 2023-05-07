@@ -1,4 +1,4 @@
-# CS432_Project
+# CS230_Project
 Final project for CS 230 Deep Learning
 Authors: 
 

@@ -2,15 +2,15 @@
 #source venv/bin/activate
 
 PROGRAM='main.py'
-NET='ResNet'
+NET='Baseline'
 PRETRAINED=1
 DATASET='Gmail'
-BATCH_SIZE=128
+BATCH_SIZE=2
 OPTIM='adam'
 MOMENTUM=0.9
 LR=1e-3
 SEED=1
-TRAIN=1
+TRAIN=0
 EVAL=$((1-$TRAIN))
 RESUME=0
 SAVE_NTH_EPOCH=5

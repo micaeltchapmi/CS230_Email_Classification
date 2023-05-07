@@ -5,11 +5,12 @@ import math
 import torch
 import _init_paths
 from parse_args import parse_args
-#from AENet import *
-#from VGGNet import *
-#from ResNet import *
-#from train_utils import model_at, parse_experiment, metrics, train, test,data_setup, set_seed, create_optimizer, check_overwrite, resume
-#from shared.dataprocess import kill_data_processes
+from AENet import *
+from VGGNet import *
+from ResNet import *
+from Baseline import *
+from train_utils import model_at, parse_experiment, metrics, train, test,data_setup, set_seed, create_optimizer, check_overwrite, resume
+from shared.dataprocess import kill_data_processes
 from datacollection import *
 
 def save_model(args, epoch):
@@ -23,7 +24,6 @@ def save_model(args, epoch):
 
 def main():
 
-    """
     args = parse_args()
     set_seed(args.seed)
 
@@ -110,7 +110,7 @@ def main():
     if args.eval:
         split = 'test'
     metrics(split, args, epoch)
-    """
+    
 
 if __name__ == '__main__':
     main()

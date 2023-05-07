@@ -48,7 +48,7 @@ class Gmail_DataProcess(DataProcess):
         #read img local computer
         email_dict = json.load(open(fname))
         text_vector = np.asarray(email_dict["Text_Vector"])
-        gt = np.asarray(email_dict["Label"])
+        gt = np.asarray(email_dict["Label"]).astype(np.int32)
         meta = email_dict
 
         return text_vector, gt, meta
@@ -58,11 +58,11 @@ class Gmail_DataProcess(DataProcess):
         return text_vectors[np.newaxis, ...], gts[np.newaxis, ...], meta
 
     def collate(self, batch):
-        imgs, gts, meta = list(zip(*batch))
-        if len(imgs) > 0:
-            imgs = np.concatenate(imgs, 0)
+        text_vectors, gts, meta = list(zip(*batch))
+        if len(text_vectors) > 0:
+            text_vectors = np.concatenate(text_vectors, 0)
             gts = np.concatenate(gts, 0)
-        return imgs, gts, meta
+        return text_vectors, gts, meta
 
 def test_process():
     from multiprocessing import Queue

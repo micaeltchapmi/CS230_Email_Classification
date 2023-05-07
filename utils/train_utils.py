@@ -25,6 +25,7 @@ import json
 from AENet import *
 from VGGNet import *
 from ResNet import *
+from Baseline import *
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
@@ -42,7 +43,7 @@ def check_overwrite(fname):
 
 
 def data_setup(args, phase, num_workers, repeat):
-    DataProcessClass = ECD_DataProcess
+    DataProcessClass = Gmail_DataProcess
     # Initialize data processes
     data_queue = Queue(4 * num_workers)
     data_processes = []
@@ -164,8 +165,8 @@ def train_or_test(args, data_queue, data_processes, training):
     # iterate over dataset in batches
     for bidx in tqdm(range(Nb)):
         item = data_queue.get()
-        imgs, gts, meta = item
-        N, W, H, C = imgs.shape
+        text_vectors, gts, meta = item
+        N, D = text_vectors.shape
 
         t_loader = 1000*(time.time()-t0)
         t0 = time.time()
@@ -255,8 +256,8 @@ def metrics(split, args, epoch=0):
 
         for bidx in tqdm(range(Nb)):
             item = data_queue.get()
-            imgs, gts, meta = item
-            N, W, H, C = imgs.shape
+            text_vectors, gts, meta = item
+            N, D = text_vectors.shape
             lnm, losses, outputs = args.step(args, item)
             labels.extend(gts.tolist())
 
@@ -266,11 +267,6 @@ def metrics(split, args, epoch=0):
             preds.extend(pred_i)
             truths.extend(gts)
             
-            #save one image from each batch, and at most 5 images for viewing sample predictions
-            if count < 5:
-                view_predictions(args, imgs, gts, pred_i, meta, bidx, epoch)
-                count+=1
-
         preds = np.asarray(preds)
         truths = np.asarray(truths)
         
@@ -285,14 +281,6 @@ def metrics(split, args, epoch=0):
         with open(outfile, 'w') as f:
             f.write('classification acc: %.5f\n' % (overall_class_acc))
 
-    """
-    #plot T-SNE embeddings
-    features = np.array(features)
-    labels = np.array(labels).reshape(-1, 1)
-    if args.eval:
-        plot_embeddings(args, features, labels)
-     #TODO: visualize weights?
-    """
 
 def view_predictions(args, imgs, gts, preds, meta, bid, epoch):
     count = 0
