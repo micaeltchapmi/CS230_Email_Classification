@@ -86,7 +86,7 @@ def test_save_label():
 # account credentials
 def read_email():
     username = "brianlangat11@gmail.com"
-    password = ""
+    password = "kdhxjkcilnylzcgd"
 
     """"
     # create an IMAP4 class with SSL
@@ -110,33 +110,50 @@ def read_email():
         # print('From:', msg['From'])
         break
         """
-    mb = MailBox('imap.gmail.com').login(username, password)
+    mb = MailBox('imap.gmail.com').login(username, password, "INBOX")
 
     # Fetch all unseen emails containing "xyz.com" in the from field
     # Don't mark them as seen
     # Set bulk=True to read them all into memory in one fetch
     # (as opposed to in streaming which is slower but uses less memory)
-    messages = mb.fetch(criteria=AND(seen=True, from_="faridacheptoo@gmail.com"),
+
+    # Selecting only email from a specific user
+    """
+    messages = mb.fetch(criteria=AND(seegitn=True, from_="faridacheptoo@gmail.com"),
                         mark_seen=True,
                         bulk=True)
+    """
+    # fetch last 100 emails in inbox
+    messages = mb.fetch(AND(seen=True), limit=10, reverse=True)
+
+    # fetch emails from specific dates
+
+    #messages = mbox.fetch(mbox.keys()[-100:], reverse=True)
+    # Fetching all messages
+    # messages = mb.fetch()
 
     # Adding emails into a dictionary
     saved_data = {}
-    for msg in messages:
-        files = glob.glob(save_dir + "/*/*/*")
+    files = glob.glob(save_dir + "/*/*/*")
+    if len(files) == 0:
+        pass
+    else:
+        print("Here1")
+        # files = glob.glob(save_dir + "/*/*/*")
 
         # For loop to check if the data is already labelled
         for file in files:
-            info = file.split("\\")
-            info2 = info[-1]
-            info3 = info2.split(".")
-            myinfo = info3[0]
-            saved_data[myinfo] = myinfo
-
+            mail = file.split("\\")
+            mailID = mail[-1]
+            mailID_split = mailID.split(".")
+            mailID_num = mailID_split[0]
+            saved_data[mailID_num] = mailID_num
+            print("Here2")
+    print("Here3")
     for msg in messages:
         if msg.uid in saved_data:
             continue
-
+        print("Here")
         category_label, class_label = label_category(
             msg)  # Call the function label_category for the user to input the labels in the training data
         if class_label == -1:
@@ -144,12 +161,13 @@ def read_email():
         Email_Data = {"Category": category_label,
                       "Label": class_label,
                       "email_id": msg.uid,
-                      "Text": msg.txt}
+                      "Text": msg.text}
 
         save_label(Email_Data)  # Calling save_label with email data
 
 
 # Define a function to label an email based on its content
+
 def label_category(email):
     """Prompts the user to label an email"""
     prompt1 = "Input the category \n 0: Passed_Events, 1: Fufilled_requests, 2: Automated_Responses"

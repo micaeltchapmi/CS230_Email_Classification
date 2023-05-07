@@ -43,7 +43,9 @@ def check_overwrite(fname):
 
 
 def data_setup(args, phase, num_workers, repeat):
+
     DataProcessClass = Gmail_DataProcess
+
     # Initialize data processes
     data_queue = Queue(4 * num_workers)
     data_processes = []
@@ -54,7 +56,7 @@ def data_setup(args, phase, num_workers, repeat):
 
 
 def parse_experiment(odir):
-    #TODO: FIx this
+    # TODO: FIx this
     stats = json.loads(open(odir + '/trainlog.txt').read())
     valloss = [k['loss_val'] for k in stats if 'loss_val' in k.keys()]
     epochs = [k['epoch'] for k in stats if 'loss_val' in k.keys()]
@@ -62,11 +64,11 @@ def parse_experiment(odir):
     idx = np.argmin(valloss)
     best_val_loss = float('%.6f' % (valloss[idx]))
     best_epoch = epochs[idx]
-    #val_results = odir + '/results_train_%d' % (best_epoch)
-    #val_results = open(val_results).readlines()
-    #first_line = val_results[0]
-    #num_params = int(first_line.rstrip().split(' ')[-1])
-    #fix num_params when cleaning
+    # val_results = odir + '/results_train_%d' % (best_epoch)
+    # val_results = open(val_results).readlines()
+    # first_line = val_results[0]
+    # num_params = int(first_line.rstrip().split(' ')[-1])
+    # fix num_params when cleaning
     num_params = None
 
     return last_epoch, best_epoch, best_val_loss, num_params
@@ -80,20 +82,20 @@ def resume(args, i):
     """ Loads model and optimizer state from a previous checkpoint. """
     print("=> loading checkpoint '{}'".format(args.resume))
     if torch.cuda.is_available():
-        device= "cuda"
+        device = "cuda"
     else:
-        device='cpu'
+        device = 'cpu'
     checkpoint = torch.load(args.resume, map_location=device)
-    if 'args' not in list(checkpoint.keys()): # Pre-trained model?
+    if 'args' not in list(checkpoint.keys()):  # Pre-trained model?
         r_args = args
-        model = eval(args.net + '_create_model')(r_args) #use original arguments, architecture can't change
+        model = eval(args.net + '_create_model')(r_args)  # use original arguments, architecture can't change
         optimizer = create_optimizer(args, model)
         model.load_state_dict(checkpoint)
         checkpoint['epoch'] = 0
         args.start_epoch = None
     else:
         r_args = checkpoint['args']
-        model = eval(args.net + '_create_model')(r_args) #use original arguments, architecture can't change
+        model = eval(args.net + '_create_model')(r_args)  # use original arguments, architecture can't change
         args.nparams = r_args.nparams
         optimizer = create_optimizer(args, model)
         model.load_state_dict(checkpoint['state_dict'])
@@ -137,7 +139,7 @@ def set_seed(seed, cuda=True):
 def train(args, epoch, data_queue, data_processes):
     """ Trains for one epoch """
     print("Training....")
-    args.model.train()
+    args.model.train()  # Setting to train
     return train_or_test(args, data_queue, data_processes, training=True)
 
 
@@ -155,8 +157,8 @@ def train_or_test(args, data_queue, data_processes, training):
     """ Run on pass over dataset """
     N = len(data_processes[0].data_paths)
     batch_size = data_processes[0].batch_size
-    Nb = int(N/batch_size)
-    if Nb*batch_size < N:
+    Nb = int(N / batch_size)
+    if Nb * batch_size < N:
         Nb += 1
 
     meters = []
@@ -165,23 +167,27 @@ def train_or_test(args, data_queue, data_processes, training):
     # iterate over dataset in batches
     for bidx in tqdm(range(Nb)):
         item = data_queue.get()
+
         text_vectors, gts, meta = item
         N, D = text_vectors.shape
 
-        t_loader = 1000*(time.time()-t0)
+
+        t_loader = 1000 * (time.time() - t0)
         t0 = time.time()
 
         if training: args.optimizer.zero_grad()
         lnm, losses, outputs = args.step(args, item)
-        if training: losses[0].backward()
-        if training: args.optimizer.step()
+
+        if training:
+            losses[0].backward()
+            args.optimizer.step()
 
         if len(meters) == 0:
             Nl = len(lnm)
             for i in range(Nl):
                 meters.append(tnt.meter.AverageValueMeter())
 
-        t_trainer = 1000*(time.time()-t0)
+        t_trainer = 1000 * (time.time() - t0)
         for ix, l in enumerate(losses):
             meters[ix].add(l.item())
 
@@ -245,19 +251,21 @@ def metrics(split, args, epoch=0):
         data_queue, data_processes = data_setup(args, split, num_workers=1, repeat=False)
         N = len(data_processes[0].data_paths)
         batch_size = data_processes[0].batch_size
-        Nb = int(N/batch_size)
+        Nb = int(N / batch_size)
         overall_class_acc = []
         preds = []
         truths = []
-        if Nb*batch_size < N:
+        if Nb * batch_size < N:
             Nb += 1
         # iterate over dataset in batches
         count = 0
 
         for bidx in tqdm(range(Nb)):
             item = data_queue.get()
+
             text_vectors, gts, meta = item
             N, D = text_vectors.shape
+
             lnm, losses, outputs = args.step(args, item)
             labels.extend(gts.tolist())
 
@@ -265,26 +273,27 @@ def metrics(split, args, epoch=0):
             pred_i = outputs[0].cpu().numpy()
 
             preds.extend(pred_i)
-            truths.extend(gts)
-            
+
+
         preds = np.asarray(preds)
         truths = np.asarray(truths)
-        
+
         overall_class_acc = np.mean(overall_class_acc)
 
         odir = args.odir + '/acc'
         os.makedirs(odir, exist_ok=True)
         outfile = odir + '/results_%s_%d.txt' % (split, epoch + 1)
-        
-        #save average keypoint distance
+
+        # save average keypoint distance
         print("Saving results to %s ..." % (outfile))
         with open(outfile, 'w') as f:
             f.write('classification acc: %.5f\n' % (overall_class_acc))
 
 
+
 def view_predictions(args, imgs, gts, preds, meta, bid, epoch):
     count = 0
-    max_save = 1 # number of images to save per batch: originally 1
+    max_save = 1  # number of images to save per batch: originally 1
     print("Plotting predictions")
     for j in range(len(preds)):
         pred = np.argmax(preds[j])
@@ -294,17 +303,18 @@ def view_predictions(args, imgs, gts, preds, meta, bid, epoch):
         imgname = "epoch%d_T_%s_P_%s_" % (epoch, true_label, pred_label)
         img = imgs[j]
         save_prediction(args, img, imgname, bid, j, epoch)
-        count+=1
+        count += 1
         if count >= max_save:
             break
     return
 
+
 def plot_embeddings(args, features, y_test):
     tsne = TSNE().fit_transform(features)
-    tx, ty = tsne[:,0], tsne[:,1]
-    tx = (tx-np.min(tx)) / (np.max(tx) - np.min(tx))
-    ty = (ty-np.min(ty)) / (np.max(ty) - np.min(ty))
-    plt.figure(figsize = (16,12))
+    tx, ty = tsne[:, 0], tsne[:, 1]
+    tx = (tx - np.min(tx)) / (np.max(tx) - np.min(tx))
+    ty = (ty - np.min(ty)) / (np.max(ty) - np.min(ty))
+    plt.figure(figsize=(16, 12))
 
     classes = args.label_names
     for i in range(len(classes)):
@@ -314,4 +324,4 @@ def plot_embeddings(args, features, y_test):
     plt.gca().invert_yaxis()
     out_dir = os.path.join(args.odir, "images")
     plt.savefig(os.path.join(out_dir, "test_features_tsne.jpg"), bbox_inches='tight')
-    #plt.show()
+    # plt.show()
