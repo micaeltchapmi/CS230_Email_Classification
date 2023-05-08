@@ -147,7 +147,7 @@ def read_email():
     if len(files) == 0:
         pass
     else:
-        print("Here1")
+
         # files = glob.glob(save_dir + "/*/*/*")
 
         # For loop to check if the data is already labelled
@@ -161,7 +161,7 @@ def read_email():
     for msg in messages:
         if msg.uid in saved_data:
             continue
-        print("Here")
+
         category_label, class_label = label_category(
             msg)  # Call the function label_category for the user to input the labels in the training data
         if class_label == -1:
