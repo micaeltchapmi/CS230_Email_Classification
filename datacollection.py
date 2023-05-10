@@ -1,14 +1,13 @@
 import os
 import json
-from datetime import datetime
 import numpy as np
-import imaplib
-import email
 from email.header import decode_header
 import glob
 import base64
 import html
 import re
+import datetime
+import pytz
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
@@ -20,10 +19,10 @@ from bs4 import BeautifulSoup
 # Add ability to relabel some threads if to help correct some of the labels based on our findings if needed
 # Add other email filters like date, time, etc to make labeling easier and more trackable
 
-Email_Categories = {"0": "Passed_Events",
-                    "1": "Fufilled_requests",
-                    "2": "Automated_Responses",
-                    "3": "Important"
+Email_Categories = {"0": "Important",
+                    "1": "Social",
+                    "2": "Promotions",
+                    "3": "Other_Unimportant",
                     }
 
 Labels = {"0": "Delete",
@@ -32,7 +31,7 @@ Labels = {"0": "Delete",
 save_dir = "./data"
 
 ### Gmail Mailbox credentials ###
-username = "user@gmail.com"
+username = "micaeltchapmi@gmail.com"
 password = ""
 
 #### Gmail API settings ###
@@ -43,6 +42,12 @@ path_to_refresh_token = os.path.join(credentials_dir, "refresh_token.json")
 
 # If modifying these SCOPES, delete the file token.json and generate new one.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+
+#Filters for email
+# set up timezone and date range
+timezone = pytz.timezone('US/Pacific')
+start_date = datetime.datetime(2023, 5, 1, tzinfo=timezone).strftime('%Y/%m/%d')
+end_date = datetime.datetime(2023, 5, 30, tzinfo=timezone).strftime('%Y/%m/%d')
 
 # Function to save a labeled email
 def save_label(Email_Data):
@@ -95,16 +100,17 @@ def Get_All_Threads():
     service = build('gmail', 'v1', credentials=credentials)
 
     # Filter threads
-    LABEL_FILTER = "in:inbox category:primary"
+
+    #LABEL_FILTER = "in:inbox category:primary"
+    LABEL_FILTER = f'in:inbox category:primary after:{start_date} before:{end_date}'
     USERID="me"
-    
 
     # Call the Gmail API to get the user's primary inbox messages
     #TODO add more filters e.g date, time of day, month, year, 
     response = service.users().messages().list(
         userId=USERID,
         q=LABEL_FILTER,
-        maxResults=10
+        #maxResults=10
     ).execute()
     messages = response.get('messages', [])
 
@@ -136,7 +142,7 @@ def Get_All_Threads():
 
 # Function to get text content from body of email 
 def get_message_body(message):
-    text_parts = []
+    text_parts = ""
     if "parts" in message.keys():
         message_parts = message['parts']
         for part in message_parts:
@@ -145,10 +151,11 @@ def get_message_body(message):
                 if data:
                     text = base64.urlsafe_b64decode(data).decode('utf-8')
                     text = re.sub(r'\[cid:.*?\]', '', text) # remove CID URLs
-                    text_parts.append(text)
+                    text_parts += text
 
             if part.get('parts'):
-                text_parts += get_message_body(part)
+                text = get_message_body(part)
+                text_parts += text
 
     elif "body" in message.keys():
         data = message['body'].get('data')
@@ -157,8 +164,8 @@ def get_message_body(message):
             soup = BeautifulSoup(text, 'html.parser')
             decoded_html = html.unescape(soup.get_text())
             text = re.sub(r'\[cid:.*?\]', '', decoded_html) # remove CID URLs
-            text_parts.append(text)
-
+            text_parts += text
+    
     return ''.join(html.unescape(text_parts))
 
 # Function to get header info from email
@@ -191,10 +198,11 @@ def Label_Emails():
     # Add previously skipped threads to dictionary
     skipped_threads_file = "./skipped_threads.txt"
     prev_skipped_threads = set()
-    skipped_threads = open(skipped_threads_file, 'r').readlines()
-    skipped_threads = [k.strip("\n") for k in skipped_threads] #remove newline characters
-    for s in skipped_threads:
-        prev_skipped_threads.add(s)
+    if os.path.exists(skipped_threads_file):
+        skipped_threads = open(skipped_threads_file, 'r').readlines()
+        skipped_threads = [k.strip("\n") for k in skipped_threads] #remove newline characters
+        for s in skipped_threads:
+            prev_skipped_threads.add(s)
     
     # Get new threads to label
     threads = Get_All_Threads()
@@ -204,15 +212,18 @@ def Label_Emails():
         #get ids
         first_message = thread['messages'][0]
         thread_id = first_message["threadId"]
+        message_id = first_message["id"]
 
         #skip if thread already labeled or previously skipped
-        if (thread_id in prev_labeled_threads) or (thread_id in prev_skipped_threads):
+        saved_id = thread_id + "_" + message_id
+        if (saved_id in prev_labeled_threads) or (saved_id in prev_skipped_threads):
             continue
 
-        message_id = first_message["id"]
         body = get_message_body(first_message["payload"])
         subject, sender = get_header_info(first_message["payload"])
 
+        #TODO: skip senders that you don't want to label to speed up if necessary
+        
         #TODO Later: Get other email info if needed
 
         # label current thread
@@ -245,7 +256,7 @@ def Label_Thread(sender, subject, body):
     for i in range(len(Email_Categories)):
         cat_prompt += "%d %s, " % (i, Email_Categories[str(i)])
 
-    print("From: " , sender)
+    print("\n\nFrom: " , sender)
     print("Subject: ", subject)
     #limit body to 300 characters
     print(body[0:300]) 
@@ -257,7 +268,12 @@ def Label_Thread(sender, subject, body):
     if Class == "-1":
         return Class, None
     
-    Category = input(cat_prompt)
+    #new update to ease experiments
+    #If class label is 1:keep, category is implied (0:Important) in the 3 category system: Primary, Social, Promotions
+    if Class == "1":
+        Category = "0"
+    else:
+        Category = input(cat_prompt)
 
     assert Category in Email_Categories.keys()
 
