@@ -32,7 +32,7 @@ save_dir = "./data"
 
 ### Gmail Mailbox credentials ###
 username = "micaeltchapmi@gmail.com"
-password = ""
+password = "qcokwgunpydtltvh"
 
 #### Gmail API settings ###
 
@@ -110,7 +110,7 @@ def Get_All_Threads():
     response = service.users().messages().list(
         userId=USERID,
         q=LABEL_FILTER,
-        #maxResults=10
+        maxResults=500 #maximum allowed value is 500. Change the dates to get more
     ).execute()
     messages = response.get('messages', [])
 
@@ -259,7 +259,7 @@ def Label_Thread(sender, subject, body):
     print("\n\nFrom: " , sender)
     print("Subject: ", subject)
     #limit body to 300 characters
-    print(body[0:300]) 
+    print(body[0:400]) 
     Class = input(label_prompt)
 
     assert Class in ["0", "1", "-1"]

@@ -66,7 +66,7 @@ class Baseline(nn.Module):
         self.args = args
 
         self.linear = nn.Sequential(
-            nn.Linear(17, self.args.num_classes)
+            nn.Linear(1000, self.args.num_classes) #sizeof_word_vector -> num_classes
         )
 
     def forward(self, x):
