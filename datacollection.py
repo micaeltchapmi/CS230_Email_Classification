@@ -30,10 +30,6 @@ Labels = {"0": "Delete",
 
 save_dir = "./data"
 
-### Gmail Mailbox credentials ###
-username = "micaeltchapmi@gmail.com"
-password = "qcokwgunpydtltvh"
-
 #### Gmail API settings ###
 
 credentials_dir = "./credentials"
