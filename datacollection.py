@@ -30,6 +30,11 @@ Labels = {"0": "Delete",
 
 save_dir = "./data"
 
+
+### Gmail Mailbox credentials ###
+username = "brianlangat11@gmail.com"
+password = ""
+
 #### Gmail API settings ###
 
 credentials_dir = "./credentials"
@@ -60,6 +65,7 @@ def save_label(Email_Data):
 
     with open(out_path, 'w') as f:
         json.dump(Email_Data, f)
+        
 
 ################################################################################################################
 ####                    Helper Functions for Reading and Labeling Threads                                   ####
@@ -106,7 +112,7 @@ def Get_All_Threads():
     response = service.users().messages().list(
         userId=USERID,
         q=LABEL_FILTER,
-        maxResults=500 #maximum allowed value is 500. Change the dates to get more
+        maxResults=500
     ).execute()
     messages = response.get('messages', [])
 
@@ -249,13 +255,13 @@ def Label_Thread(sender, subject, body):
     """Prompts the user to label an email"""
     label_prompt = "Input the label \n 0: Delete, 1: Keep  -1: Skip : "
     cat_prompt = "Input the category \n"
-    for i in range(len(Email_Categories)):
+    for i in range(1,len(Email_Categories)):
         cat_prompt += "%d %s, " % (i, Email_Categories[str(i)])
 
     print("\n\nFrom: " , sender)
     print("Subject: ", subject)
     #limit body to 300 characters
-    print(body[0:400]) 
+    print(body[0:300]) 
     Class = input(label_prompt)
 
     assert Class in ["0", "1", "-1"]
