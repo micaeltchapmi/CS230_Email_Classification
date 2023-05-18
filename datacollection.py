@@ -255,8 +255,14 @@ def Label_Emails():
 def Label_Thread(sender, subject, body):
     global n_delete
     global n_keep
+
+    #clear screen
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+    #print number of labeled data
     print("N_delete: %d" % (n_delete))
     print("N_keep: %d" % (n_keep))
+
     """Prompts the user to label an email"""
     label_prompt = "Input the label \n 0: Delete, 1: Keep  -1: Skip : "
     cat_prompt = "Input the category \n"
@@ -282,6 +288,7 @@ def Label_Thread(sender, subject, body):
         n_keep += 1
     else:
         Category = input(cat_prompt)
+        assert Category in [str(k) for k in range(1, len(Email_Categories))]
         n_delete += 1
 
     assert Category in Email_Categories.keys()
