@@ -30,6 +30,12 @@ Labels = {"0": "Delete",
 
 save_dir = "./data"
 
+#counting labeled files
+delete_files = glob.glob(save_dir + "/Delete/*/*")
+keep_files = glob.glob(save_dir + "/Keep/*/*")
+n_delete = len(delete_files)
+n_keep = len(keep_files)
+
 #### Gmail API settings ###
 
 credentials_dir = "./credentials"
@@ -227,7 +233,7 @@ def Label_Emails():
 
         #skip emails that were too subjective and add skipped IDs to file
         if Class == "-1":
-            prev_skipped_threads.add(thread_id)
+            prev_skipped_threads.add(saved_id)
             with open(skipped_threads_file, 'w') as f:
                 for t in prev_skipped_threads:
                     f.write("%s\n" % (t))
@@ -246,6 +252,10 @@ def Label_Emails():
 
 # Function to label a thread
 def Label_Thread(sender, subject, body):
+    global n_delete
+    global n_keep
+    print("N_delete: %d" % (n_delete))
+    print("N_keep: %d" % (n_keep))
     """Prompts the user to label an email"""
     label_prompt = "Input the label \n 0: Delete, 1: Keep  -1: Skip : "
     cat_prompt = "Input the category \n"
@@ -268,8 +278,10 @@ def Label_Thread(sender, subject, body):
     #If class label is 1:keep, category is implied (0:Important) in the 3 category system: Primary, Social, Promotions
     if Class == "1":
         Category = "0"
+        n_keep += 1
     else:
         Category = input(cat_prompt)
+        n_delete += 1
 
     assert Category in Email_Categories.keys()
 
