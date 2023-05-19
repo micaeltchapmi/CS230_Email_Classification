@@ -50,7 +50,13 @@ def main():
 
     # DO THE SPLIT TRAIN/VAL/TEST HERE AND RUN
     delete_files = glob.glob(data_dir + "/Delete/*/*")
-    keep_files = glob.glob(data_dir + "/Keep/*/*")
+    keep_files = glob.glob(data_dir + "/Keep/*/*") 
+
+    #for balancing the data
+    n = 250
+    delete_files = delete_files[0:n]
+    keep_files = keep_files[0:n]
+    
     np.random.shuffle(delete_files)
     np.random.shuffle(keep_files)
 
