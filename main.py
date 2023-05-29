@@ -8,7 +8,7 @@ from parse_args import parse_args
 from AENet import *
 from VGGNet import *
 from ResNet import *
-
+from BERT import *
 from Baseline import *
 from train_utils import model_at, parse_experiment, metrics, train, test,data_setup, set_seed, create_optimizer, check_overwrite, resume
 
