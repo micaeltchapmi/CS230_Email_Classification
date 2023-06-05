@@ -2,22 +2,22 @@
 #source venv/bin/activate
 
 PROGRAM='main.py'
-NET='Baseline'
+NET='BERT'
 PRETRAINED=1
 DATASET='Gmail'
-BATCH_SIZE=2
+BATCH_SIZE=8
 OPTIM='adam'
 MOMENTUM=0.9
 LR=1e-3
 SEED=1
-TRAIN=0
+TRAIN=1
 EVAL=$((1-$TRAIN))
 RESUME=0
 SAVE_NTH_EPOCH=5
 TEST_NTH_EPOCH=$SAVE_NTH_EPOCH
 TEST_SPLIT='val'
 NWORKERS=4
-EPOCHS=50
+EPOCHS=200
 
 
 python3 -u $PROGRAM --net $NET --seed $SEED --resume $RESUME --eval $EVAL --batch_size $BATCH_SIZE --dataset $DATASET --epochs $EPOCHS --nworkers $NWORKERS --save_nth_epoch $SAVE_NTH_EPOCH --test_nth_epoch $TEST_NTH_EPOCH --train $TRAIN --resume $RESUME \

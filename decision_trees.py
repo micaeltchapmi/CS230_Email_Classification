@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import re
 import glob
 import json
+import xgboost as xgb
+import lightgbm as lgb
 np.random.seed(1)
 
 data_dir = "./processed_data"
@@ -47,40 +49,42 @@ def cal_accuracy(y_test, y_pred):
     print ("Accuracy : ",
     accuracy_score(y_test,y_pred)*100)
 
+def predict_and_compute_accuracy(model):
+    print("Train accuracy...")
+    model.fit(train_text_vector,train_labels)
+    y_pred_train = prediction(train_text_vector, model)
+    cal_accuracy(train_labels, y_pred_train)
+    print("Test accuracy...")
+    y_pred_test = prediction(test_text_vector, model)
+    cal_accuracy(test_labels, y_pred_test)
+
 def main():
 
     # Decision tree with gini
+    #max_depth=10, min_samples_leaf=6
     print("Evaluating decision trees with gini criterion...")
     model_gini = DecisionTreeClassifier(criterion = "gini",
-                random_state = 123,max_depth=10, min_samples_leaf=6)
-    
-    # Performing training
-    model_gini.fit(train_text_vector,train_labels)
-
+                random_state = 123)
     # Prediction using gini
-    print("Train accuracy...")
-    y_pred_gini = prediction(train_text_vector, model_gini)
-    cal_accuracy(train_labels, y_pred_gini)
-    print("Test accuracy...")
-    y_pred_gini = prediction(test_text_vector, model_gini)
-    cal_accuracy(test_labels, y_pred_gini)
+    predict_and_compute_accuracy(model_gini)
 
     print("\nEvaluating decision trees with entropy criterion...")
     # Decision tree with entropy
     model_entropy = DecisionTreeClassifier(
                 criterion = "entropy", random_state = 123,
-                max_depth = 10, min_samples_leaf = 6)
-    
-    # Performing training
-    model_entropy.fit(train_text_vector, train_labels)
+                )
+    predict_and_compute_accuracy(model_entropy)
 
-    # Prediction using entropy
-    print("Train accuracy...")
-    y_pred_entropy = prediction(train_text_vector, model_entropy)
-    cal_accuracy(train_labels, y_pred_entropy)
-    print("Test accuracy...")
-    y_pred_entropy = prediction(test_text_vector, model_entropy)
-    cal_accuracy(test_labels, y_pred_entropy)
+    print("Evaluating Gradient boosted decision trees with lgbm")
+    #try gradient boosted decision trees using LightGBM libraries
+    model_lgb = lgb.LGBMClassifier(random_state=123)
+    predict_and_compute_accuracy(model_lgb)
+
+    print("Evaluating Gradient boosted decision trees with xgb")
+    #try gradient boosted decision trees using XGBoost libraries
+    model_xgb = xgb.XGBClassifier(random_state=123)
+    predict_and_compute_accuracy(model_xgb)
+
 
 
 if __name__=="__main__":
