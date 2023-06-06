@@ -78,9 +78,7 @@ def BERT_step(args, item):
 
     pred = args.model.forward(input_ids, masks)
     
-    print(pred.shape)
-    print(targets.shape)
-    classification_loss = nn.CrossEntropyLoss(pred, targets)
+    classification_loss = nn.CrossEntropyLoss()(pred, targets)
     loss = classification_loss    
     loss = loss.mean()
 
